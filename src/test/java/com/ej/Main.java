@@ -32,7 +32,7 @@ public class Main {
                 creditRequest.setProductCode("XY");
                 creditRequest.setApplyNo(applyNo);
                 creditRequest.setApplyAmount(new BigDecimal(500));
-                BaseResponse<CreditResponse> baseResponse = ejManage.process(creditRequest);
+                BaseResponse<CreditResponse> baseResponse = ejManage.execute(creditRequest);
                 System.out.println(JSON.toJSONString(baseResponse));
                 countDownLatch.countDown();
             });
@@ -81,7 +81,7 @@ public class Main {
     
     public static void test(int times,EjManage<CreditRequest, CreditResponse> ejManage,CreditRequest creditRequest){
         for (int idx = 0; idx < times; idx++) {
-            BaseResponse<CreditResponse> baseResponse = ejManage.process(creditRequest);
+            BaseResponse<CreditResponse> baseResponse = ejManage.execute(creditRequest);
             //System.out.println(JSON.toJSONString(baseResponse));
         }
     }
