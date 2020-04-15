@@ -4,6 +4,8 @@ import com.ej.chain.context.ChainContext;
 import com.ej.chain.dto.BaseResponse;
 import com.ej.chain.exception.ChainForcedInterruptException;
 import com.ej.chain.handlers.Handler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -16,6 +18,8 @@ import java.util.List;
  * @date: 2020/4/14 16:20
  */
 public abstract class AbstractManage<Request, Data> {
+
+    public static final Logger LOGGER = LoggerFactory.getLogger(AbstractManage.class);
 
     /**
      * 责任链
@@ -61,10 +65,10 @@ public abstract class AbstractManage<Request, Data> {
                 }
             }
         } catch (ChainForcedInterruptException e) {
-            e.printStackTrace();
+            LOGGER.error("{},errorCode:{},errorMsg:{} -> ", e.getClass().getSimpleName(), e.getErrorCode(), e.getErrorMsg(), e);
             ChainContext.injectTips(e.getErrorCode(), e.getErrorMsg());
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.error("{} -> ", e.getClass().getSimpleName(), e);
             ChainContext.injectTips(systemErrorCode(), systemErrorMsg());
         } finally {
             BaseResponse baseResponse = ChainContext.baseResponse();

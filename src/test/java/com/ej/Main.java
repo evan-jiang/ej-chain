@@ -1,6 +1,5 @@
 package com.ej;
 
-import com.alibaba.fastjson.JSON;
 import com.ej.chain.dto.BaseResponse;
 import com.ej.chain.proxy.ProxyHandlerFactory;
 import com.ej.credit.dto.CreditRequest;
@@ -17,7 +16,7 @@ import java.util.concurrent.Executors;
 
 public class Main {
 
-    public static void thread()throws  InterruptedException{
+    public static void thread() throws InterruptedException {
         int num = 20;
         ExecutorService executorService = Executors.newFixedThreadPool(8);
         final CountDownLatch countDownLatch = new CountDownLatch(num);
@@ -33,7 +32,7 @@ public class Main {
                 creditRequest.setApplyNo(applyNo);
                 creditRequest.setApplyAmount(new BigDecimal(500));
                 BaseResponse<CreditResponse> baseResponse = ejManage.execute(creditRequest);
-                System.out.println(JSON.toJSONString(baseResponse));
+                System.out.println(baseResponse);
                 countDownLatch.countDown();
             });
         }
@@ -45,7 +44,7 @@ public class Main {
     }
 
     public static void main(String[] args) throws InterruptedException {
-        int times = 500000;
+        int times = 1;
 
         CreditRequest creditRequest = new CreditRequest();
         creditRequest.setProductCode("XY");
@@ -62,24 +61,24 @@ public class Main {
         javassistEjManage.register(ProxyHandlerFactory.getJavassistProxyHandler(CreditFinalHandler.class));
 
         long s = System.currentTimeMillis();
-        test(times,cglibEjManage,creditRequest);
+        test(times, cglibEjManage, creditRequest);
         System.out.println(System.currentTimeMillis() - s);
 
         s = System.currentTimeMillis();
-        test(times,javassistEjManage,creditRequest);
+        test(times, javassistEjManage, creditRequest);
+        System.out.println(System.currentTimeMillis() - s);
+
+        /*s = System.currentTimeMillis();
+        test(times, cglibEjManage, creditRequest);
         System.out.println(System.currentTimeMillis() - s);
 
         s = System.currentTimeMillis();
-        test(times,cglibEjManage,creditRequest);
+        test(times, javassistEjManage, creditRequest);
         System.out.println(System.currentTimeMillis() - s);
-
-        s = System.currentTimeMillis();
-        test(times,javassistEjManage,creditRequest);
-        System.out.println(System.currentTimeMillis() - s);
-        Thread.sleep(1000000L);
+        Thread.sleep(1000000L);*/
     }
-    
-    public static void test(int times,EjManage<CreditRequest, CreditResponse> ejManage,CreditRequest creditRequest){
+
+    public static void test(int times, EjManage<CreditRequest, CreditResponse> ejManage, CreditRequest creditRequest) {
         for (int idx = 0; idx < times; idx++) {
             BaseResponse<CreditResponse> baseResponse = ejManage.execute(creditRequest);
             //System.out.println(JSON.toJSONString(baseResponse));
