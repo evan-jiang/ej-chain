@@ -78,25 +78,24 @@ public class ProxyHandlerFactory {
 
     /**
      * 获取抽象Handler的CGLIB代理对象
-     *
      * @param clazz
-     * @return com.ej.chain.handlers.Handler<Request>
+     * @return T
      * @auther: Evan·Jiang
-     * @date: 2020/4/14 16:28
+     * @date: 2020/4/15 14:04
      */
-    public static <Request> Handler<Request> getCglibProxyHandler(Class<? extends Handler> clazz) {
+    public static <T extends Handler> T getCglibProxyHandler(Class<T> clazz) {
         checkClass(clazz);
         List<Method> methods = getAbstractMethods(clazz);
         checkMethods(clazz, methods);
         synchronized (clazz) {
             if (CGLIB_OBJ_CACHE.containsKey(clazz)) {
-                return (Handler<Request>) CGLIB_OBJ_CACHE.get(clazz);
+                return (T) CGLIB_OBJ_CACHE.get(clazz);
             }
             Enhancer enhancer = new Enhancer();
             enhancer.setSuperclass(clazz);
             enhancer.setCallback(new CglibProxyHandler(clazz));
             CGLIB_OBJ_CACHE.put(clazz, enhancer.create());
-            return (Handler<Request>) CGLIB_OBJ_CACHE.get(clazz);
+            return (T) CGLIB_OBJ_CACHE.get(clazz);
         }
     }
 
@@ -108,19 +107,18 @@ public class ProxyHandlerFactory {
 
     /**
      * 获取抽象Handler的JAVASSIST代理对象
-     *
      * @param clazz
-     * @return com.ej.chain.handlers.Handler<Request>
+     * @return T
      * @auther: Evan·Jiang
-     * @date: 2020/4/14 16:28
+     * @date: 2020/4/15 14:03
      */
-    public static <Request> Handler<Request> getJavassistProxyHandler(Class<? extends Handler> clazz) {
+    public static <T extends Handler> T getJavassistProxyHandler(Class<T> clazz) {
         checkClass(clazz);
         List<Method> methods = getAbstractMethods(clazz);
         checkMethods(clazz, methods);
         synchronized (clazz) {
             if (JAVASSIST_OBJ_CACHE.containsKey(clazz)) {
-                return (Handler<Request>) JAVASSIST_OBJ_CACHE.get(clazz);
+                return (T) JAVASSIST_OBJ_CACHE.get(clazz);
             }
             String className = clazz.getName() + EXTENDS_CLASS_NAME_SUFFIX;
             try {
@@ -130,7 +128,7 @@ public class ProxyHandlerFactory {
             } catch (Exception e) {
                 throw new IllegalArgumentException(e);
             }
-            return (Handler<Request>) JAVASSIST_OBJ_CACHE.get(clazz);
+            return (T) JAVASSIST_OBJ_CACHE.get(clazz);
         }
     }
 
