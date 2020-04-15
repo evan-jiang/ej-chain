@@ -86,7 +86,7 @@ public class ProxyHandlerFactory {
      */
     public static <Request> Handler<Request> getCglibProxyHandler(Class<? extends Handler> clazz) {
         checkClass(clazz);
-        List<Method> methods = getHasAnnotationMethods(clazz);
+        List<Method> methods = getAbstractMethods(clazz);
         checkMethods(clazz, methods);
         synchronized (clazz) {
             if (CGLIB_OBJ_CACHE.containsKey(clazz)) {
@@ -116,7 +116,7 @@ public class ProxyHandlerFactory {
      */
     public static <Request> Handler<Request> getJavassistProxyHandler(Class<? extends Handler> clazz) {
         checkClass(clazz);
-        List<Method> methods = getHasAnnotationMethods(clazz);
+        List<Method> methods = getAbstractMethods(clazz);
         checkMethods(clazz, methods);
         synchronized (clazz) {
             if (JAVASSIST_OBJ_CACHE.containsKey(clazz)) {
@@ -196,21 +196,19 @@ public class ProxyHandlerFactory {
     }
 
     /**
-     * 获取需要代理的Handler类使用了{@link FromContext}或{@link ToContext}注解的抽象方法
-     *
+     * 获取需要代理的Handler类的所有抽象方法
      * @param clazz
      * @return java.util.List<java.lang.reflect.Method>
      * @auther: Evan·Jiang
-     * @date: 2020/4/14 16:31
+     * @date: 2020/4/15 9:51
      */
-    private static List<Method> getHasAnnotationMethods(Class<? extends Handler> clazz) {
-        return Arrays.asList(clazz.getDeclaredMethods()).stream().filter(method -> {
-            return method.getAnnotation(FromContext.class) != null || method.getAnnotation(ToContext.class) != null;
-        }).collect(Collectors.toList());
+    private static List<Method> getAbstractMethods(Class<? extends Handler> clazz) {
+        return Arrays.asList(clazz.getDeclaredMethods()).stream().filter(method -> Modifier.isAbstract(method.getModifiers())).collect(Collectors.toList());
     }
 
     /**
      * 对需要代理的Handler类使用了{@link FromContext}或{@link ToContext}注解的抽象方法进行校验
+     *
      * @param clazz
      * @param methods
      * @auther: Evan·Jiang
@@ -226,23 +224,22 @@ public class ProxyHandlerFactory {
             }
             if (method.getAnnotation(FromContext.class) != null && method.getAnnotation(ToContext.class) != null) {
                 throw new IllegalArgumentException(method.toString() + " can't have both FromContext and ToContext");
-            }
-            if (method.getAnnotation(FromContext.class) != null) {
+            } else if (method.getAnnotation(FromContext.class) != null) {
                 if (method.getReturnType() == void.class) {
                     throw new IllegalArgumentException(method.toString() + "  must have a return value");
                 }
                 if (method.getParameterTypes().length != 0) {
                     throw new IllegalArgumentException(method.toString() + " can't have arguments");
                 }
-
-            }
-            if (method.getAnnotation(ToContext.class) != null) {
+            } else if (method.getAnnotation(ToContext.class) != null) {
                 if (method.getReturnType() != void.class) {
                     throw new IllegalArgumentException(method.toString() + " can't have a return value");
                 }
                 if (method.getParameterTypes().length != 1) {
                     throw new IllegalArgumentException(method.toString() + " must have an argument");
                 }
+            }else {
+                throw new IllegalArgumentException(method.toString() + " need either FromContext or ToContext");
             }
         }
     }
