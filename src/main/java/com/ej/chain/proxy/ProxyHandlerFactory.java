@@ -5,9 +5,6 @@ import com.ej.chain.annotation.ToContext;
 import com.ej.chain.context.ChainContext;
 import com.ej.chain.handlers.Handler;
 import javassist.*;
-import net.sf.cglib.proxy.Enhancer;
-import net.sf.cglib.proxy.MethodInterceptor;
-import net.sf.cglib.proxy.MethodProxy;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -16,6 +13,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 
@@ -26,109 +24,82 @@ import java.util.stream.Collectors;
  * @date: 2020/4/14 16:24
  */
 public class ProxyHandlerFactory {
-    /**
-     * CGLIB生成的代理对象池
-     */
-    private static final Map<Class<? extends Handler>, Object> CGLIB_OBJ_CACHE = new HashMap<>();
+
     /**
      * JAVASSIST生成的代理对象池
      */
-    private static final Map<Class<? extends Handler>, Object> JAVASSIST_OBJ_CACHE = new HashMap<>();
-
-
+    private static final Map<Class<?>, Object> JAVASSIST_OBJ_CACHE = new HashMap<>();
     /**
-     * CGLIB代理对象的代理方法执行类
-     *
-     * @author: Evan·Jiang
-     * @date: 2020/4/14 16:26
+     * JAVASSIST生成的代理类池
      */
-    public static class CglibProxyHandler<Request> implements MethodInterceptor {
-        /**
-         * 被代理的抽象Handler的Class
-         */
-        private Class<? extends Handler> clazz;
-
-        public CglibProxyHandler(Class<? extends Handler> clazz) {
-            this.clazz = clazz;
-        }
-
-        /**
-         * CGLIB代理方法类执行体
-         *
-         * @param obj
-         * @param method
-         * @param args
-         * @param proxy
-         * @return java.lang.Object
-         * @auther: Evan·Jiang
-         * @date: 2020/4/14 16:27
-         */
-        public Object intercept(Object obj, Method method, Object[] args, MethodProxy proxy) throws Throwable {
-            FromContext fromContext = null;
-            ToContext toContext = null;
-            if ((fromContext = method.getAnnotation(FromContext.class)) != null) {
-                return ChainContext.extractTemporaryArgs(fromContext.value());
-            } else if ((toContext = method.getAnnotation(ToContext.class)) != null) {
-                ChainContext.injectTemporaryArgs(toContext.value(), args[0]);
-                return null;
-            }
-            return proxy.invokeSuper(obj, args);
-        }
-    }
-
-    /**
-     * 获取抽象Handler的CGLIB代理对象
-     * @param clazz
-     * @return T
-     * @auther: Evan·Jiang
-     * @date: 2020/4/15 14:04
-     */
-    public static <T extends Handler> T getCglibProxyHandler(Class<T> clazz) {
-        checkClass(clazz);
-        List<Method> methods = getAbstractMethods(clazz);
-        checkMethods(clazz, methods);
-        synchronized (clazz) {
-            if (CGLIB_OBJ_CACHE.containsKey(clazz)) {
-                return (T) CGLIB_OBJ_CACHE.get(clazz);
-            }
-            Enhancer enhancer = new Enhancer();
-            enhancer.setSuperclass(clazz);
-            enhancer.setCallback(new CglibProxyHandler(clazz));
-            CGLIB_OBJ_CACHE.put(clazz, enhancer.create());
-            return (T) CGLIB_OBJ_CACHE.get(clazz);
-        }
-    }
-
-
-    private static final String EXTENDS_CLASS_NAME_SUFFIX = "ProxyHandler";
-    private static final String ABSTRACT_METHOD_KEY = "abstract";
-    private static final String FROM_METHOD_TEMPLATE = "%s %s %s(){return (%s)com.ej.chain.context.ChainContext.extractTemporaryArgs(\"%s\");}";
-    private static final String TO_METHOD_TEMPLATE = "%s void %s(%s object){com.ej.chain.context.ChainContext.injectTemporaryArgs(\"%s\",object);}";
+    private static final Map<Class<?>, Class<?>> JAVASSIST_CLASS_CACHE = new ConcurrentHashMap<>();
 
     /**
      * 获取抽象Handler的JAVASSIST代理对象
+     *
      * @param clazz
      * @return T
      * @auther: Evan·Jiang
      * @date: 2020/4/15 14:03
      */
-    public static <T extends Handler> T getJavassistProxyHandler(Class<T> clazz) {
-        checkClass(clazz);
-        List<Method> methods = getAbstractMethods(clazz);
-        checkMethods(clazz, methods);
+    public static <T extends Handler> T getJavassistProxyHandlerInstance(Class<T> clazz,boolean singleton) {
+        Class<?> proxyClass = getJavassistProxyHandlerClass(clazz);
+        if(!singleton){
+            try {
+                return (T) proxyClass.newInstance();
+            } catch (Exception e) {
+                throw new IllegalArgumentException(e);
+            }
+        }
+        if (JAVASSIST_OBJ_CACHE.containsKey(clazz)) {
+            return (T) JAVASSIST_OBJ_CACHE.get(clazz);
+        }
         synchronized (clazz) {
             if (JAVASSIST_OBJ_CACHE.containsKey(clazz)) {
                 return (T) JAVASSIST_OBJ_CACHE.get(clazz);
             }
-            String className = clazz.getName() + EXTENDS_CLASS_NAME_SUFFIX;
             try {
-                Class<?> proxyClass = buildExtendsClass(clazz, className, methods);
-                Constructor<?> constructor = proxyClass.getConstructor();
-                JAVASSIST_OBJ_CACHE.put(clazz, constructor.newInstance());
+                JAVASSIST_OBJ_CACHE.put(clazz, proxyClass.newInstance());
             } catch (Exception e) {
                 throw new IllegalArgumentException(e);
             }
             return (T) JAVASSIST_OBJ_CACHE.get(clazz);
+        }
+    }
+
+    private static final String EXTENDS_CLASS_NAME_SUFFIX = "ProxyHandler";
+    private static final String ABSTRACT_METHOD_KEY = "abstract";
+    private static final String FROM_METHOD_TEMPLATE = "%s %s %s(){return (%s)%s.extractTemporaryArgs(\"%s\");}";
+    private static final String TO_METHOD_TEMPLATE = "%s void %s(%s object){%s.injectTemporaryArgs(\"%s\",object);}";
+
+
+    /**
+     * 获取抽象Handler的JAVASSIST代理类
+     *
+     * @param clazz
+     * @return java.lang.Class<?>
+     * @auther: Evan·Jiang
+     * @date: 2020/4/17 10:49
+     */
+    public static Class<?> getJavassistProxyHandlerClass(Class<?> clazz) {
+        if (JAVASSIST_CLASS_CACHE.containsKey(clazz)) {
+            return JAVASSIST_CLASS_CACHE.get(clazz);
+        }
+        synchronized (clazz) {
+            if (JAVASSIST_CLASS_CACHE.containsKey(clazz)) {
+                return JAVASSIST_CLASS_CACHE.get(clazz);
+            }
+            checkClass(clazz);
+            List<Method> methods = getAbstractMethods(clazz);
+            checkMethods(clazz, methods);
+            String className = clazz.getName() + EXTENDS_CLASS_NAME_SUFFIX;
+            try {
+                Class<?> proxyClass = buildExtendsClass(clazz, className, methods);
+                JAVASSIST_CLASS_CACHE.put(clazz, proxyClass);
+            } catch (Exception e) {
+                throw new IllegalArgumentException(e);
+            }
+            return JAVASSIST_CLASS_CACHE.get(clazz);
         }
     }
 
@@ -173,10 +144,10 @@ public class ProxyHandlerFactory {
         String key = null;
         if (method.getAnnotation(FromContext.class) != null) {
             key = method.getAnnotation(FromContext.class).value();
-            return String.format(FROM_METHOD_TEMPLATE, openLevel, method.getReturnType().getName(), methodName, method.getReturnType().getName(), key);
+            return String.format(FROM_METHOD_TEMPLATE, openLevel, method.getReturnType().getName(), methodName, method.getReturnType().getName(), ChainContext.class.getName(), key);
         } else {
             key = method.getAnnotation(ToContext.class).value();
-            return String.format(TO_METHOD_TEMPLATE, openLevel, methodName, method.getParameterTypes()[0].getName(), key);
+            return String.format(TO_METHOD_TEMPLATE, openLevel, methodName, method.getParameterTypes()[0].getName(), ChainContext.class.getName(), key);
         }
     }
 
@@ -187,7 +158,10 @@ public class ProxyHandlerFactory {
      * @auther: Evan·Jiang
      * @date: 2020/4/14 16:30
      */
-    private static void checkClass(Class<? extends Handler> clazz) {
+    private static void checkClass(Class<?> clazz) {
+        if (!Handler.class.isAssignableFrom(clazz)) {
+            throw new IllegalArgumentException(clazz.getName() + " must be the child of " + Handler.class.getName());
+        }
         if (!Modifier.isAbstract(clazz.getModifiers())) {
             throw new IllegalArgumentException(clazz.getName() + " is not an abstract class");
         }
@@ -195,12 +169,13 @@ public class ProxyHandlerFactory {
 
     /**
      * 获取需要代理的Handler类的所有抽象方法
+     *
      * @param clazz
      * @return java.util.List<java.lang.reflect.Method>
      * @auther: Evan·Jiang
      * @date: 2020/4/15 9:51
      */
-    private static List<Method> getAbstractMethods(Class<? extends Handler> clazz) {
+    private static List<Method> getAbstractMethods(Class<?> clazz) {
         return Arrays.asList(clazz.getDeclaredMethods()).stream().filter(method -> Modifier.isAbstract(method.getModifiers())).collect(Collectors.toList());
     }
 
@@ -212,7 +187,7 @@ public class ProxyHandlerFactory {
      * @auther: Evan·Jiang
      * @date: 2020/4/14 16:31
      */
-    private static void checkMethods(Class<? extends Handler> clazz, List<Method> methods) {
+    private static void checkMethods(Class<?> clazz, List<Method> methods) {
         if (methods == null || methods.size() == 0) {
             throw new IllegalArgumentException(clazz.getName() + " does't have any abstract methods");
         }
@@ -236,7 +211,7 @@ public class ProxyHandlerFactory {
                 if (method.getParameterTypes().length != 1) {
                     throw new IllegalArgumentException(method.toString() + " must have an argument");
                 }
-            }else {
+            } else {
                 throw new IllegalArgumentException(method.toString() + " need either FromContext or ToContext");
             }
         }

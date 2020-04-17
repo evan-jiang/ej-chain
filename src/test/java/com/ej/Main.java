@@ -22,8 +22,8 @@ public class Main {
         final CountDownLatch countDownLatch = new CountDownLatch(num);
         EjManage<CreditRequest, CreditResponse> ejManage = new EjManage<>();
         ejManage.register(new CreditParamsCheckHandler());
-        ejManage.register(ProxyHandlerFactory.getCglibProxyHandler(CreditApplyHandler.class));
-        ejManage.register(ProxyHandlerFactory.getJavassistProxyHandler(CreditFinalHandler.class));
+        ejManage.register(ProxyHandlerFactory.getJavassistProxyHandlerInstance(CreditApplyHandler.class,true));
+        ejManage.register(ProxyHandlerFactory.getJavassistProxyHandlerInstance(CreditFinalHandler.class,true));
         for (int idx = 0; idx < num; idx++) {
             final String applyNo = String.valueOf(idx);
             executorService.execute(() -> {
@@ -50,38 +50,21 @@ public class Main {
         creditRequest.setProductCode("XY");
         creditRequest.setApplyNo("9");
         creditRequest.setApplyAmount(new BigDecimal(500));
-        EjManage<CreditRequest, CreditResponse> cglibEjManage = new EjManage<>();
-        cglibEjManage.register(new CreditParamsCheckHandler());
-        cglibEjManage.register(ProxyHandlerFactory.getCglibProxyHandler(CreditApplyHandler.class));
-        cglibEjManage.register(ProxyHandlerFactory.getCglibProxyHandler(CreditFinalHandler.class));
 
         EjManage<CreditRequest, CreditResponse> javassistEjManage = new EjManage<>();
         javassistEjManage.register(new CreditParamsCheckHandler());
-        javassistEjManage.register(ProxyHandlerFactory.getJavassistProxyHandler(CreditApplyHandler.class));
-        javassistEjManage.register(ProxyHandlerFactory.getJavassistProxyHandler(CreditFinalHandler.class));
+        javassistEjManage.register(ProxyHandlerFactory.getJavassistProxyHandlerInstance(CreditApplyHandler.class, true));
+        javassistEjManage.register(ProxyHandlerFactory.getJavassistProxyHandlerInstance(CreditFinalHandler.class, true));
 
         long s = System.currentTimeMillis();
-        test(times, cglibEjManage, creditRequest);
-        System.out.println(System.currentTimeMillis() - s);
-
-        s = System.currentTimeMillis();
         test(times, javassistEjManage, creditRequest);
         System.out.println(System.currentTimeMillis() - s);
 
-        /*s = System.currentTimeMillis();
-        test(times, cglibEjManage, creditRequest);
-        System.out.println(System.currentTimeMillis() - s);
-
-        s = System.currentTimeMillis();
-        test(times, javassistEjManage, creditRequest);
-        System.out.println(System.currentTimeMillis() - s);
-        Thread.sleep(1000000L);*/
     }
 
     public static void test(int times, EjManage<CreditRequest, CreditResponse> ejManage, CreditRequest creditRequest) {
         for (int idx = 0; idx < times; idx++) {
             BaseResponse<CreditResponse> baseResponse = ejManage.execute(creditRequest);
-            //System.out.println(JSON.toJSONString(baseResponse));
         }
     }
 }
