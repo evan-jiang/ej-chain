@@ -6,11 +6,9 @@ import com.ej.chain.context.ChainContext;
 import com.ej.chain.handlers.Handler;
 import javassist.*;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,7 +26,7 @@ public class ProxyHandlerFactory {
     /**
      * JAVASSIST生成的代理对象池
      */
-    private static final Map<Class<?>, Object> JAVASSIST_OBJ_CACHE = new HashMap<>();
+    private static final Map<Class<?>, Object> JAVASSIST_OBJ_CACHE = new ConcurrentHashMap<>();
     /**
      * JAVASSIST生成的代理类池
      */
@@ -42,9 +40,9 @@ public class ProxyHandlerFactory {
      * @auther: Evan·Jiang
      * @date: 2020/4/15 14:03
      */
-    public static <T extends Handler> T getJavassistProxyHandlerInstance(Class<T> clazz,boolean singleton) {
+    public static <T extends Handler> T getJavassistProxyHandlerInstance(Class<T> clazz, boolean singleton) {
         Class<?> proxyClass = getJavassistProxyHandlerClass(clazz);
-        if(!singleton){
+        if (!singleton) {
             try {
                 return (T) proxyClass.newInstance();
             } catch (Exception e) {
