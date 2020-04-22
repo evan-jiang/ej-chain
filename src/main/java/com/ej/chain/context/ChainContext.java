@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ChainContext {
 
     /**
-     * 线程上下文映射
+     * 线程上下文映射，put需要线程安全，因为key会出现hash碰撞
      */
     private static final Map<Thread, ThreadLocal<Context>> CACHE = new ConcurrentHashMap<>();
 
@@ -41,6 +41,7 @@ public class ChainContext {
      */
     private static ThreadLocal<Context> getThreadLocal() {
         Thread currentThread = Thread.currentThread();
+        //对CACHE的非原子操作不需要加锁，因为是key是线程独占
         if (!CACHE.containsKey(currentThread)) {
             ThreadLocal<Context> threadLocal = new ThreadLocal<>();
             CACHE.put(currentThread, threadLocal);
