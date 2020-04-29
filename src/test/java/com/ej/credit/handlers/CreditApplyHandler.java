@@ -1,13 +1,13 @@
 package com.ej.credit.handlers;
 
 import com.ej.chain.annotation.ToContext;
-import com.ej.chain.handlers.AbstractProcessHandler;
+import com.ej.chain.handlers.ProcessHandler;
 import com.ej.credit.dto.CreditRequest;
 import com.ej.credit.dto.CreditResponse;
 
-public abstract class CreditApplyHandler extends AbstractProcessHandler<CreditRequest> {
+public abstract class CreditApplyHandler implements ProcessHandler<CreditRequest> {
     @Override
-    public boolean idempotent(CreditRequest creditRequest) {
+    public boolean duplicated(CreditRequest creditRequest) {
         return false;
     }
 

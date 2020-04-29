@@ -3,7 +3,7 @@ package com.ej.chain.manages;
 import com.ej.chain.context.ChainContext;
 import com.ej.chain.dto.BaseResponse;
 import com.ej.chain.exception.ChainForcedInterruptException;
-import com.ej.chain.handlers.Handler;
+import com.ej.chain.handlers.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,13 +53,20 @@ public abstract class AbstractManage<Request, Data> {
     public BaseResponse<Data> execute(Request request) {
         try {
             for (Handler<Request> handler : chain) {
-                if (!handler.checkParams(request)) {
-                    break;
+                if (handler instanceof CheckHandler) {
+                    ((CheckHandler)handler).checkParams(request);
+                } else if (handler instanceof ProcessHandler) {
+                    boolean duplicated = ((ProcessHandler)handler).duplicated(request);
+                    if (ChainContext.isInterrupted()) {
+                        break;
+                    }
+                    if (duplicated) {
+                        continue;
+                    }
+                    ((ProcessHandler)handler).process(request);
+                } else if (handler instanceof CompletedHandler) {
+                    ((CompletedHandler)handler).completed(request);
                 }
-                if (handler.idempotent(request)) {
-                    continue;
-                }
-                handler.process(request);
                 if (ChainContext.isInterrupted()) {
                     break;
                 }
