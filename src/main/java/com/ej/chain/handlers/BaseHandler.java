@@ -1,6 +1,6 @@
 package com.ej.chain.handlers;
 
-public interface Handler<Request> {
+public interface BaseHandler<Request> {
 //
 //    /**
 //     * 参数校验

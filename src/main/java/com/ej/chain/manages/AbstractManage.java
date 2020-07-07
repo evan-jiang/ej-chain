@@ -24,7 +24,7 @@ public abstract class AbstractManage<Request, Data> {
     /**
      * 责任链
      */
-    private List<Handler<Request>> chain;
+    private List<BaseHandler<Request>> chain;
 
     /**
      * 将Handler注册到责任链中
@@ -34,7 +34,7 @@ public abstract class AbstractManage<Request, Data> {
      * @auther: Evan·Jiang
      * @date: 2020/4/14 16:21
      */
-    public AbstractManage<Request, Data> register(Handler<Request> handler) {
+    public AbstractManage<Request, Data> register(BaseHandler<Request> handler) {
         if (chain == null) {
             chain = new LinkedList<>();
         }
@@ -52,7 +52,7 @@ public abstract class AbstractManage<Request, Data> {
      */
     public BaseResponse<Data> execute(Request request) {
         try {
-            for (Handler<Request> handler : chain) {
+            for (BaseHandler<Request> handler : chain) {
                 if (handler instanceof CheckHandler) {
                     ((CheckHandler)handler).checkParams(request);
                 } else if (handler instanceof ProcessHandler) {

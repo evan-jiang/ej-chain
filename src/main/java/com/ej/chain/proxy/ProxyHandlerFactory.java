@@ -3,7 +3,7 @@ package com.ej.chain.proxy;
 import com.ej.chain.annotation.FromContext;
 import com.ej.chain.annotation.ToContext;
 import com.ej.chain.context.ChainContext;
-import com.ej.chain.handlers.Handler;
+import com.ej.chain.handlers.BaseHandler;
 import javassist.*;
 
 import java.lang.reflect.Method;
@@ -40,7 +40,7 @@ public class ProxyHandlerFactory {
      * @auther: Evan·Jiang
      * @date: 2020/4/15 14:03
      */
-    public static <T extends Handler> T getJavassistProxyHandlerInstance(Class<T> clazz, boolean singleton) {
+    public static <T extends BaseHandler> T getJavassistProxyHandlerInstance(Class<T> clazz, boolean singleton) {
         Class<?> proxyClass = getJavassistProxyHandlerClass(clazz);
         if (!singleton) {
             try {
@@ -157,8 +157,8 @@ public class ProxyHandlerFactory {
      * @date: 2020/4/14 16:30
      */
     private static void checkClass(Class<?> clazz) {
-        if (!Handler.class.isAssignableFrom(clazz)) {
-            throw new IllegalArgumentException(clazz.getName() + " must be the child of " + Handler.class.getName());
+        if (!BaseHandler.class.isAssignableFrom(clazz)) {
+            throw new IllegalArgumentException(clazz.getName() + " must be the child of " + BaseHandler.class.getName());
         }
         if (!Modifier.isAbstract(clazz.getModifiers())) {
             throw new IllegalArgumentException(clazz.getName() + " is not an abstract class");

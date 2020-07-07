@@ -2,7 +2,7 @@ package com.ej.chain.handlers;
 
 import com.ej.chain.context.ChainContext;
 
-public interface CheckHandler<Request> extends Handler<Request> {
+public interface CheckHandler<Request> extends BaseHandler<Request> {
 
     /**
      * 参数校验

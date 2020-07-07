@@ -2,7 +2,7 @@ package com.ej.chain.handlers;
 
 import com.ej.chain.context.ChainContext;
 
-public interface ProcessHandler<Request> extends Handler<Request> {
+public interface ProcessHandler<Request> extends BaseHandler<Request> {
     /**
      * 是否重复
      * @param request

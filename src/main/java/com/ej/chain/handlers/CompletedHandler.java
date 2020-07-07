@@ -2,7 +2,7 @@ package com.ej.chain.handlers;
 
 import com.ej.chain.context.ChainContext;
 
-public interface CompletedHandler<Request> extends Handler<Request> {
+public interface CompletedHandler<Request> extends BaseHandler<Request> {
     /**
      * 处理完成之后的方法
      * @param request
