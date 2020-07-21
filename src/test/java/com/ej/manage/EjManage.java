@@ -3,24 +3,24 @@ package com.ej.manage;
 import com.ej.chain.manages.AbstractManage;
 import com.ej.enums.ErrorEnum;
 
-public class EjManage<Request,Data> extends AbstractManage<Request,Data> {
+public class EjManage<Request, Data> extends AbstractManage<Request, Data> {
     @Override
-    public String systemErrorCode() {
+    protected String systemErrorCode() {
         return ErrorEnum.SYSTEM_ERROR.getErrorCode();
     }
 
     @Override
-    public String systemErrorMsg() {
+    protected String systemErrorMsg() {
         return ErrorEnum.SYSTEM_ERROR.getErrorMsg();
     }
 
     @Override
-    public String successCode() {
+    protected String successCode() {
         return ErrorEnum.SUCCESS.getErrorCode();
     }
 
     @Override
-    public String successMsg() {
+    protected String successMsg() {
         return ErrorEnum.SUCCESS.getErrorMsg();
     }
 }

@@ -3,7 +3,10 @@ package com.ej.chain.manages;
 import com.ej.chain.context.ChainContext;
 import com.ej.chain.dto.BaseResponse;
 import com.ej.chain.exception.ChainForcedInterruptException;
-import com.ej.chain.handlers.*;
+import com.ej.chain.handlers.BaseHandler;
+import com.ej.chain.handlers.CheckHandler;
+import com.ej.chain.handlers.CompletedHandler;
+import com.ej.chain.handlers.ProcessHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,7 +45,15 @@ public abstract class AbstractManage<Request, Data> {
         return this;
     }
 
-    public BaseResponse<Data> execute(String request){
+    /**
+     * 执行责任链
+     *
+     * @param request 字符串参数
+     * @return com.ej.chain.dto.BaseResponse<Data>
+     * @auther: Evan·Jiang
+     * @date: 2020/7/21 17:23
+     */
+    public BaseResponse<Data> execute(String request) {
         try {
             Class<Request> requestClass = getRequestClass();
             Request reqObj = convertRequest(request, requestClass);
@@ -75,18 +86,18 @@ public abstract class AbstractManage<Request, Data> {
         try {
             for (BaseHandler<Request> handler : chain) {
                 if (handler instanceof CheckHandler) {
-                    ((CheckHandler)handler).checkParams(request);
+                    ((CheckHandler) handler).checkParams(request);
                 } else if (handler instanceof ProcessHandler) {
-                    boolean duplicated = ((ProcessHandler)handler).duplicated(request);
+                    boolean duplicated = ((ProcessHandler) handler).duplicated(request);
                     if (ChainContext.isInterrupted()) {
                         break;
                     }
                     if (duplicated) {
                         continue;
                     }
-                    ((ProcessHandler)handler).process(request);
+                    ((ProcessHandler) handler).process(request);
                 } else if (handler instanceof CompletedHandler) {
-                    ((CompletedHandler)handler).completed(request);
+                    ((CompletedHandler) handler).completed(request);
                 }
                 if (ChainContext.isInterrupted()) {
                     break;
@@ -118,7 +129,7 @@ public abstract class AbstractManage<Request, Data> {
      * @auther: Evan·Jiang
      * @date: 2020/4/14 16:23
      */
-    public abstract String systemErrorCode();
+    protected abstract String systemErrorCode();
 
     /**
      * 每个系统都有自己的系统异常描述，各个系统自己定义
@@ -127,7 +138,7 @@ public abstract class AbstractManage<Request, Data> {
      * @auther: Evan·Jiang
      * @date: 2020/4/14 16:23
      */
-    public abstract String systemErrorMsg();
+    protected abstract String systemErrorMsg();
 
     /**
      * 每个系统都有自己的操作成功码，各个系统自己定义
@@ -136,7 +147,7 @@ public abstract class AbstractManage<Request, Data> {
      * @auther: Evan·Jiang
      * @date: 2020/4/14 16:23
      */
-    public abstract String successCode();
+    protected abstract String successCode();
 
     /**
      * 每个系统都有自己的操作成功描述，各个系统自己定义
@@ -145,14 +156,30 @@ public abstract class AbstractManage<Request, Data> {
      * @auther: Evan·Jiang
      * @date: 2020/4/14 16:23
      */
-    public abstract String successMsg();
+    protected abstract String successMsg();
 
-    protected Request convertRequest(String request,Class<Request> clazz){
-        throw new RuntimeException("需要子类【"+this.getClass().getName()+"】实现convertRequest方法");
+    /**
+     * 当外部参数是String时需要反序列化参数为java对象
+     *
+     * @param request
+     * @param clazz
+     * @return Request
+     * @auther: Evan·Jiang
+     * @date: 2020/7/21 17:25
+     */
+    protected Request convertRequest(String request, Class<Request> clazz) {
+        throw new RuntimeException("需要子类【" + this.getClass().getName() + "】实现convertRequest方法");
     }
 
-    protected Class<Request> getRequestClass(){
-        throw new RuntimeException("需要子类【"+this.getClass().getName()+"】实现getRequestClass方法");
+    /**
+     * 为反序列化对象提供class
+     *
+     * @return java.lang.Class<Request>
+     * @auther: Evan·Jiang
+     * @date: 2020/7/21 17:26
+     */
+    protected Class<Request> getRequestClass() {
+        throw new RuntimeException("需要子类【" + this.getClass().getName() + "】实现getRequestClass方法");
     }
 
 

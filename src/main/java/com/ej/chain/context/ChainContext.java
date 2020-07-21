@@ -83,7 +83,7 @@ public class ChainContext {
     }
 
     /**
-     * 将提示信息组装返回值设置到上行文中，并设置为中断
+     * 将提示信息组装返回值设置到上行文中，并设置为中断(后续handler不再执行)
      *
      * @param responseCode 提示编码
      * @param responseMsg  提示描述
@@ -99,7 +99,7 @@ public class ChainContext {
     }
 
     /**
-     * 将业务信息组装返回值设置倒数上下文中，并设置为中断
+     * 将业务信息组装返回值设置倒数上下文中，并设置为中断(后续handler不再执行)
      *
      * @param data 业务信息数据
      * @auther: Evan·Jiang
