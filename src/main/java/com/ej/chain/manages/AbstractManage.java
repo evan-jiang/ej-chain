@@ -47,6 +47,13 @@ public abstract class AbstractManage<Request, Data> {
             Class<Request> requestClass = getRequestClass();
             Request reqObj = convertRequest(request, requestClass);
             return execute(reqObj);
+        } catch (ChainForcedInterruptException e) {
+            LOGGER.error("{},errorCode:{},errorMsg:{} -> ", e.getClass().getSimpleName(), e.getErrorCode(), e.getErrorMsg(), e);
+            LOGGER.error("{} -> ", e.getClass().getSimpleName(), e);
+            BaseResponse baseResponse = new BaseResponse<>();
+            baseResponse.setResponseCode(e.getErrorCode());
+            baseResponse.setResponseMsg(e.getErrorMsg());
+            return baseResponse;
         } catch (Exception e) {
             LOGGER.error("{} -> ", e.getClass().getSimpleName(), e);
             BaseResponse baseResponse = new BaseResponse<>();
