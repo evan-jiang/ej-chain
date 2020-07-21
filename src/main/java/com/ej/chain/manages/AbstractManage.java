@@ -42,6 +42,20 @@ public abstract class AbstractManage<Request, Data> {
         return this;
     }
 
+    public BaseResponse<Data> execute(String request){
+        try {
+            Class<Request> requestClass = getRequestClass();
+            Request reqObj = convertRequest(request, requestClass);
+            return execute(reqObj);
+        } catch (Exception e) {
+            LOGGER.error("{} -> ", e.getClass().getSimpleName(), e);
+            BaseResponse baseResponse = new BaseResponse<>();
+            baseResponse.setResponseCode(systemErrorCode());
+            baseResponse.setResponseMsg(systemErrorMsg());
+            return baseResponse;
+        }
+    }
+
     /**
      * 执行责任链
      *
@@ -125,5 +139,14 @@ public abstract class AbstractManage<Request, Data> {
      * @date: 2020/4/14 16:23
      */
     public abstract String successMsg();
+
+    protected Request convertRequest(String request,Class<Request> clazz){
+        throw new RuntimeException("需要子类【"+this.getClass().getName()+"】实现convertRequest方法");
+    }
+
+    protected Class<Request> getRequestClass(){
+        throw new RuntimeException("需要子类【"+this.getClass().getName()+"】实现getRequestClass方法");
+    }
+
 
 }
